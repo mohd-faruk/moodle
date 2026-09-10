@@ -36,9 +36,10 @@ export default {
         overflow: scroll;
         border: 1px solid #c7cace;
         border-radius: 5px;
+        direction: ltr;
+        text-align: left;
       }
-      .modal-codemirror-container {
-      .cm-editor {
+      .modal-codemirror-container .cm-editor {
         height: 100%;
       }
     `,
