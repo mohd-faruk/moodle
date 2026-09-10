@@ -64,6 +64,25 @@ class behat_tiny_html extends behat_base {
     }
 
     /**
+     * Get Javascript to read the source code editor direction and alignment.
+     *
+     * @param string $editorid The editor id to inspect.
+     * @return string The Javascript to execute.
+     */
+    protected function get_javascript_sourcecode_direction(string $editorid): string {
+        return <<<EOF
+            const container = document.getElementById('{$editorid}_codeMirrorContainer');
+            const sourceCodeEditor = container.shadowRoot.querySelector('.modal-codemirror-container [contenteditable="true"]');
+            const styles = getComputedStyle(sourceCodeEditor);
+
+            resolve({
+                direction: styles.direction,
+                textAlign: styles.textAlign,
+            });
+        EOF;
+    }
+
+    /**
      * Gets the specified formatted single line source code from the editor
      * and compares it to what is expected.
      *
@@ -103,6 +122,30 @@ class behat_tiny_html extends behat_base {
 
         if ($this->evaluate_javascript_for_editor($editorid, $js) != 'true') {
             throw new ExpectationException("Source code is not indented as expected.", $this->getSession());
+        }
+    }
+
+    /**
+     * Checks that the TinyMCE source code editor is displayed left-to-right.
+     *
+     * @Then /^the source code editor should be displayed left-to-right for the "(?P<locator_string>(?:[^\"]|\\")*)" TinyMCE editor$/
+     * @throws ExpectationException
+     * @param string $locator The editor to select within
+     */
+    public function source_code_editor_should_be_ltr(string $locator): void {
+        $this->require_tiny_tags();
+
+        $editor = $this->get_textarea_for_locator($locator);
+        $editorid = $editor->getAttribute('id');
+        $styles = $this->evaluate_javascript_for_editor($editorid, $this->get_javascript_sourcecode_direction($editorid));
+
+        if (($styles['direction'] ?? null) !== 'ltr' || ($styles['textAlign'] ?? null) !== 'left') {
+            $direction = $styles['direction'] ?? 'unknown';
+            $textalign = $styles['textAlign'] ?? 'unknown';
+            throw new ExpectationException(
+                "Source code editor styles were direction '{$direction}' and text-align '{$textalign}'.",
+                $this->getSession()
+            );
         }
     }
 }
